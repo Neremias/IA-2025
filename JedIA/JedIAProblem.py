@@ -36,18 +36,77 @@ MOVIMIENTOS = {
     "moveUp": (+1,0),
 }
 
-class JedIaProblem(SearchProblem):
+def hayRobots(coordenadaJed,droides):
+    for coordenadaDroide in droides:
+        if coordenadaDroide[0:2] == coordenadaJed:
+           return True
+    
+    return False
 
+class JedIaProblem(SearchProblem):
     def cost(self,state1,action,state2):
         return 1
     
     def is_goal(self, state):
         return False
     
-    def actions(self,state):
-        available_actions = []
+    def actions(state):
+        posActualJed = state[0]
+        rowJed,colJed = state[0]
+        puntosConcentracion = state[1]
+        droides = state[2]
 
-        return availableActions
+        MOVIMIENTOS = {
+            "move": [(rowJed-1,colJed),
+                 (rowJed+1,colJed),
+                 (rowJed,colJed-1),
+                 (rowJed,colJed+1)],
+            "jump": [(rowJed-1,colJed-1),
+                 (rowJed-1,colJed+1),
+                 (rowJed+1,colJed+1),
+                 (rowJed+1,colJed-1)],
+            "slash":[(rowJed,colJed)],
+            "force":[(rowJed,colJed)],
+            "rest":[(rowJed,colJed)],
+}
+        listaAcciones = []
+        casillerosAdyacentes = MOVIMIENTOS["move"]
+
+        for action, listaMovimientos in MOVIMIENTOS.items():
+
+            #recorro la lista de movimientos de mi diccionario (arriba, abajo, izq o dere)
+            for movimiento in listaMovimientos:
+
+                #si mi proximo movimiento es move y no es pared entonces me muevo. 
+                if action == "move" and movimiento not in WALLS:
+                    listaAcciones.append((action,movimiento))
+
+                #si mi proximo movimiento es saltar y no es pared entonces salto. 
+                if action == "jump" and movimiento not in WALLS:
+                    if puntosConcentracion >= 1:
+                        listaAcciones.append((action,movimiento))
+
+                #si mi proximo movimiento es atacar con laser, tengo puntos de concentracion y tengo bots en mi lugar, entonces ataco. 
+                if action == "slash" and puntosConcentracion >= 1:
+                    if hayRobots(movimiento,droides):
+                        listaAcciones.append((action,movimiento))
+            
+                #si mi proximo movimiento es atacar con fuerza, tengo puntos de concentracion y tengo bots en mi lugar, entonces ataco. 
+                if action == "force" and puntosConcentracion >= 5:
+                    if hayRobots(movimiento,droides):
+                        listaAcciones.append((action,movimiento))
+                                  
+                #si mi proximo movimiento es descansar y no tengo bots en mi lugar, ni tampoco adyacentemente, entonces descanso. 
+                if action == "rest" and hayRobots(movimiento,droides) == False:
+
+                    for casillero in casillerosAdyacentes:
+                        #si encuentro por lo menos un casillero con robots, entonces no puedo descansar. 
+                        if hayRobots(casillero,droides):
+                            break
+                      
+                    listaAcciones.append((action,posActualJed))     
+
+        return listaAcciones
     
     def result(self,action,state):
         new_state = () 
